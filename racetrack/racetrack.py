@@ -53,14 +53,14 @@ class Racetrack:
 
         (
             self.s_smoothed, self.x_smoothed, self.y_smoothed, self.track_width_smoothed,
-            self.track_width_corrected_smoothed, self.track_length_smoothed,
-            self.curvature_smoothed, self.heading_smoothed, self.tck, self.u
+            self.track_width_corrected_smoothed, self.curvature_smoothed, self.heading_smoothed,
+            self.tck, self.u
         ) = self.compute_track_parameters(self.raw_x, self.raw_y, self.raw_track_width)
 
 
         (
             self.s, self.x, self.y, self.track_width, self.track_width_corrected,
-            self.curvature, self.heading
+            self.curvature, self.heading, self.track_length
         ) = self.interpolate_track()
         self.track_size = len(self.x)
 
@@ -81,12 +81,11 @@ class Racetrack:
         heading = compute_heading(x_dot, y_dot)
         curvature = compute_curvature(x_dot, y_dot, x_ddot, y_ddot)
         s = scipy.integrate.cumulative_trapezoid(np.sqrt(x_dot**2 + y_dot**2), u, initial=0)
-        track_length = s[-1]
 
         smoothing_errors = np.sqrt((x - raw_x) ** 2 + (y - raw_y) ** 2)
         track_width_corrected = (track_width / 2 - smoothing_errors) * 2 # TODO what is the purpose of this?
         # TODO check if s and u are the same
-        return s, x, y, track_width, track_width_corrected, track_length, curvature, heading, tck, u
+        return s, x, y, track_width, track_width_corrected, curvature, heading, tck, u
 
     def interpolate_track(self, points_per_meter=10):
         N = int(self.track_length_smoothed * points_per_meter)
@@ -98,9 +97,10 @@ class Racetrack:
         curvature_interpolated = compute_curvature(x_dot_interpolated, y_dot_interpolated, x_ddot_interpolated, y_ddot_interpolated)
         track_width_interpolated = np.interp(s_interpolated, self.s_smoothed, self.track_width_smoothed)
         track_width_corrected_interpolated = np.interp(s_interpolated, self.s_smoothed, self.track_width_corrected_smoothed)
+        track_length = s_interpolated[-1]
 
         return s_interpolated, x_interpolated, y_interpolated, track_width_interpolated, \
-               track_width_corrected_interpolated, curvature_interpolated, heading_interpolated
+               track_width_corrected_interpolated, curvature_interpolated, heading_interpolated, track_length
 
     def debug_plot(self):
         # accumulate curvature to get heading angle

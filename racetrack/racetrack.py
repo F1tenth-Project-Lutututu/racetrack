@@ -52,16 +52,17 @@ class Racetrack:
 
 
         (
-            self.s, self.x, self.y, self.track_width, self.track_width_corrected,
-            self.track_length, self.curvature, self.heading, self.tck, self.u
+            self.s_smoothed, self.x_smoothed, self.y_smoothed, self.track_width_smoothed,
+            self.track_width_corrected_smoothed, self.track_length_smoothed,
+            self.curvature_smoothed, self.heading_smoothed, self.tck, self.u
         ) = self.compute_track_parameters(self.raw_x, self.raw_y, self.raw_track_width)
 
-        self.track_size = len(self.x)
 
         (
-            self.s_interpolated, self.x_interpolated, self.y_interpolated, self.track_width_interpolated,
-            self.track_width_corrected_interpolated, self.curvature_interpolated, self.heading_interpolated
+            self.s, self.x, self.y, self.track_width, self.track_width_corrected,
+            self.curvature, self.heading
         ) = self.interpolate_track()
+        self.track_size = len(self.x)
 
     def compute_track_parameters(self, raw_x, raw_y, raw_track_width):
         track_width = scipy.signal.savgol_filter(raw_track_width,
@@ -88,15 +89,15 @@ class Racetrack:
         return s, x, y, track_width, track_width_corrected, track_length, curvature, heading, tck, u
 
     def interpolate_track(self, points_per_meter=10):
-        N = int(self.track_length * points_per_meter)
-        s_interpolated = np.linspace(0, self.track_length, N)
-        x_interpolated, y_interpolated = scipy.interpolate.splev(s_interpolated / self.track_length, self.tck)
-        x_dot_interpolated, y_dot_interpolated = scipy.interpolate.splev(s_interpolated / self.track_length, self.tck, der=1)
-        x_ddot_interpolated, y_ddot_interpolated = scipy.interpolate.splev(s_interpolated / self.track_length, self.tck, der=2)
+        N = int(self.track_length_smoothed * points_per_meter)
+        s_interpolated = np.linspace(0, self.track_length_smoothed, N)
+        x_interpolated, y_interpolated = scipy.interpolate.splev(s_interpolated / self.track_length_smoothed, self.tck)
+        x_dot_interpolated, y_dot_interpolated = scipy.interpolate.splev(s_interpolated / self.track_length_smoothed, self.tck, der=1)
+        x_ddot_interpolated, y_ddot_interpolated = scipy.interpolate.splev(s_interpolated / self.track_length_smoothed, self.tck, der=2)
         heading_interpolated = compute_heading(x_dot_interpolated, y_dot_interpolated)
         curvature_interpolated = compute_curvature(x_dot_interpolated, y_dot_interpolated, x_ddot_interpolated, y_ddot_interpolated)
-        track_width_interpolated = np.interp(s_interpolated, self.s, self.track_width)
-        track_width_corrected_interpolated = np.interp(s_interpolated, self.s, self.track_width_corrected)
+        track_width_interpolated = np.interp(s_interpolated, self.s_smoothed, self.track_width_smoothed)
+        track_width_corrected_interpolated = np.interp(s_interpolated, self.s_smoothed, self.track_width_corrected_smoothed)
 
         return s_interpolated, x_interpolated, y_interpolated, track_width_interpolated, \
                track_width_corrected_interpolated, curvature_interpolated, heading_interpolated
@@ -131,16 +132,16 @@ class Racetrack:
         plt.show()
 
     def plot_track(self, plot_inport_dots=False, ax=None, n=None):
-        print(f"Track length: {self.track_length} m")
-        print(f"{len(self.x)} points")
+        print(f"Track length: {self.track_length_smoothed} m")
+        print(f"{len(self.x_smoothed)} points")
         plt.rcParams["figure.figsize"] = (16, 8)
         plt.figure()
         # start arrow
         plt.arrow(
-            self.x[0],
-            self.y[0],
-            self.x[1] - self.x[0],
-            self.y[1] - self.y[0],
+            self.x_smoothed[0],
+            self.y_smoothed[0],
+            self.x_smoothed[1] - self.x_smoothed[0],
+            self.y_smoothed[1] - self.y_smoothed[0],
             head_width=2,
             alpha=0.20,
             color="orange",
@@ -149,17 +150,17 @@ class Racetrack:
         if plot_inport_dots:
             plt.scatter(self.raw_x, self.raw_y)
         # print type x_s and y_s
-        print("x shape: ", self.x.shape, "y shape: ", self.y.shape)
+        print("x shape: ", self.x_smoothed.shape, "y shape: ", self.y_smoothed.shape)
         plt.scatter(self.raw_x, self.raw_y, color="r", label="raw track points")
 
-        plt.plot(self.x, self.y, "r", label="centerline spline")
+        plt.plot(self.x_smoothed, self.y_smoothed, "r", label="centerline spline")
         plt.title(f"Track map {self.track_name}", fontsize=20)
 
         for i in range(len(self.raw_x)):
             if plot_inport_dots:
                 circle = plt.Circle(
                     (self.raw_x[i], self.raw_y[i]),
-                    self.track_width[i] / 2,
+                    self.track_width_smoothed[i] / 2,
                     color="g",
                     fill=False,
                     alpha=0.15,
@@ -168,15 +169,15 @@ class Racetrack:
 
             circle_2 = plt.Circle(
                 (self.raw_x[i], self.raw_y[i]),
-                self.track_width_corrected[i] / 2,
+                self.track_width_corrected_smoothed[i] / 2,
                 color="b",
                 fill=False,
                 alpha=0.15,
             )
             plt.gcf().gca().add_artist(circle_2)
 
-        for i in range(0, len(self.x), 20):
-            plt.text(self.x[i], self.y[i] + 0.2, f"{self.s[i]:.0f} ", fontsize=12)
+        for i in range(0, len(self.x_smoothed), 20):
+            plt.text(self.x_smoothed[i], self.y_smoothed[i] + 0.2, f"{self.s_smoothed[i]:.0f} ", fontsize=12)
 
         plt.grid()
         plt.axis("equal")
@@ -186,7 +187,7 @@ class Racetrack:
         plt.legend(["centerline spline", "track direction"])
 
     def frenet2cart(self, s: np.ndarray, n: np.ndarray):
-        u = s / self.track_length
+        u = s / self.track_length_smoothed
         x, y = scipy.interpolate.splev(u, self.tck)
         x_dot, y_dot = scipy.interpolate.splev(u, self.tck, der=1)
         m = np.hypot(x_dot, y_dot)
@@ -213,12 +214,12 @@ class Racetrack:
             plt.scatter(x, y, color="r")
 
     def length(self):
-        return self.track_length
+        return self.track_length_smoothed
 
     def plot_curvature(self):
         plt.figure()
-        plt.plot(self.s, self.curvature, label="curvature")
-        plt.plot(self.s, self.raw_track_width, label="width")
+        plt.plot(self.s_smoothed, self.curvature_smoothed, label="curvature")
+        plt.plot(self.s_smoothed, self.raw_track_width, label="width")
         plt.xlabel("s [m]")
         plt.ylabel("curvature [1/m]")
         plt.title("Curvature")
@@ -228,10 +229,10 @@ class Racetrack:
 
     def plot_max_width(self):
         plt.figure()
-        plt.plot(self.s, self.raw_track_width, label="width")
-        inv_k = 1 / np.abs(self.curvature)
+        plt.plot(self.s_smoothed, self.raw_track_width, label="width")
+        inv_k = 1 / np.abs(self.curvature_smoothed)
         inv_k = np.clip(inv_k, 0, 2)
-        plt.plot(self.s, inv_k, label="1/curvature")
+        plt.plot(self.s_smoothed, inv_k, label="1/curvature")
         plt.xlabel("s [m]")
         plt.ylabel("width [m]")
         plt.title("Track width")
@@ -241,14 +242,14 @@ class Racetrack:
 
     # TODO think about connecting x and y into points and making this math smoother
     def cart2frenet(self, heading, x, y):
-        closes_point_idx = find_closest_point_idx(x, y, self.x, self.y)
-        closest_neighbor_idx = find_closest_neighbor_idx(x, y, self.x, self.y, closes_point_idx)
+        closes_point_idx = find_closest_point_idx(x, y, self.x_smoothed, self.y_smoothed)
+        closest_neighbor_idx = find_closest_neighbor_idx(x, y, self.x_smoothed, self.y_smoothed, closes_point_idx)
 
-        t = find_projection(x, y, self.x, self.y, self.s, closes_point_idx, closest_neighbor_idx)
-        s0 = (1-t)*self.s[closes_point_idx] + t*self.s[closest_neighbor_idx]
-        x0 = (1-t)*self.x[closes_point_idx] + t*self.x[closest_neighbor_idx]
-        y0 = (1-t)*self.y[closes_point_idx] + t*self.y[closest_neighbor_idx]
-        psi0 = (1-t)*self.heading[closes_point_idx] + t*self.heading[closest_neighbor_idx]
+        t = find_projection(x, y, self.x_smoothed, self.y_smoothed, self.s_smoothed, closes_point_idx, closest_neighbor_idx)
+        s0 = (1-t)*self.s_smoothed[closes_point_idx] + t*self.s_smoothed[closest_neighbor_idx]
+        x0 = (1-t)*self.x_smoothed[closes_point_idx] + t*self.x_smoothed[closest_neighbor_idx]
+        y0 = (1-t)*self.y_smoothed[closes_point_idx] + t*self.y_smoothed[closest_neighbor_idx]
+        psi0 = (1-t)*self.heading_smoothed[closes_point_idx] + t*self.heading_smoothed[closest_neighbor_idx]
         
         s = s0
         n = np.cos(psi0) * (y - y0) - np.sin(psi0) * (x - x0)    

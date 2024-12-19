@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "racetrack"
+authors = [{name="Grzegorz Czechmanowski", email="grzegorz.czechmanowski@ideas-ncbr.pl"},
+           {name="Piotr Kicki", email="piotr.kicki@ideas-ncbr.pl"},
+           {name="Jan Węgrzynowski", email="jan.wegrzynowski@ideas-ncbr.pl"}]
+maintainers = [{name="Grzegorz Czechmanowski", email="grzegorz.czechmanowski@ideas-ncbr.pl"},
+           {name="Piotr Kicki", email="piotr.kicki@ideas-ncbr.pl"},
+           {name="Jan Węgrzynowski", email="jan.wegrzynowski@ideas-ncbr.pl"}]
+description = 'Python package that allow one to load racetrack and interact with it.'
+readme = "README.md"
+requires-python = ">=3.8"
+#license = { file= "LICENSE" }
+keywords = ["Racetrack", "Autonomous racing"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+
+dependencies = [
+    "scipy",
+    "numpy",
+    "matplotlib",
+]
+dynamic = ["version"]

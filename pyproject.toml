@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -25,3 +25,10 @@ dependencies = [
     "matplotlib",
 ]
 dynamic = ["version"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["racetrack"]
+
+[tool.setuptools.package-data]
+racetrack = ["tracks/*"]

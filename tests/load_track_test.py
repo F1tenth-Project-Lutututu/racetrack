@@ -1,3 +1,6 @@
+from matplotlib import pyplot as plt
 from racetrack import Racetrack
 
-racetrack = Racetrack("icra_2023")
+racetrack = Racetrack("lab_monza")
+racetrack.plot_track()
+plt.show()

@@ -108,30 +108,30 @@ class Racetrack:
 
     def debug_plot(self):
         # accumulate curvature to get heading angle
-        heading_curv_interpolated = scipy.integrate.cumulative_trapezoid(self.curvature_interpolated, self.s_interpolated, initial=0)
-        heading_unwind = np.unwrap(self.heading_interpolated)
+        heading_curv = scipy.integrate.cumulative_trapezoid(self.curvature, self.s, initial=0)
+        heading_unwind = np.unwrap(self.heading)
         plt.figure()
         plt.subplot(5, 1, 1)
-        plt.plot(self.x_interpolated, self.x_interpolated, "r", label="track points")
+        plt.plot(self.x, self.x, "r", label="track points")
         # plot arrow for track direction
         plt.arrow(
-            self.x_interpolated[0],
-            self.x_interpolated[0],
-            self.x_interpolated[1],
-            self.x_interpolated[1],
+            self.x[0],
+            self.x[0],
+            self.x[1],
+            self.x[1],
             head_width=2,
             alpha=0.20,
             color="orange",
         )
 
         plt.subplot(5, 1, 2)
-        plt.plot(self.x_interpolated, heading_unwind - heading_unwind[0], label="heading")  
+        plt.plot(self.x, heading_unwind - heading_unwind[0], label="heading")  
         plt.subplot(5, 1, 3)
-        plt.plot(self.x_interpolated, self.curvature_interpolated, label="curvature")
+        plt.plot(self.x, self.curvature, label="curvature")
         plt.subplot(5, 1, 4)
-        plt.plot(self.x_interpolated, heading_curv_interpolated, label="heading_curv width")
+        plt.plot(self.x, heading_curv, label="heading_curv width")
         plt.subplot(5, 1, 5)
-        plt.plot(self.x_interpolated, self.x_interpolated, label="x")
+        plt.plot(self.x, self.x, label="x")
         plt.tight_layout()
         plt.show()
 
@@ -279,7 +279,7 @@ class Racetrack:
         centerline_y = (1-t)*self.y_smoothed[closest_point_idx] + t*self.y_smoothed[closest_neighbor_idx]
         centerline_yaw = (1-t)*self.heading_smoothed[closest_point_idx] + t*self.heading_smoothed[closest_neighbor_idx]
         
-        signed_dist_to_centerline = np.cos(centerline_yaw) * (centerline_y - centerline_y) - np.sin(centerline_yaw) * (x - centerline_x)    
+        signed_dist_to_centerline = np.cos(centerline_yaw) * (y - centerline_y) - np.sin(centerline_yaw) * (x - centerline_x)    
         dist_to_centerline = np.abs(signed_dist_to_centerline)
         heading_error = yaw - centerline_yaw
         heading_error = np.arctan2(np.sin(heading_error), np.cos(heading_error))

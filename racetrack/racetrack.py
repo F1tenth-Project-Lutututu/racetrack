@@ -69,7 +69,8 @@ class Racetrack:
     def compute_track_parameters(self, raw_x, raw_y, raw_track_width):
         track_width = scipy.signal.savgol_filter(raw_track_width,
                                           self.smoothing_filter_window,
-                                          self.smoothing_filter_order)
+                                          self.smoothing_filter_order,
+                                          mode="wrap")
 
         smoothing_weights = 1. / track_width
         tck, u = scipy.interpolate.splprep(

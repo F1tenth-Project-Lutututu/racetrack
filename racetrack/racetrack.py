@@ -279,55 +279,36 @@ class Racetrack:
         centerline_x = (1-t)*self.x_smoothed[closest_point_idx] + t*self.x_smoothed[closest_neighbor_idx]
         centerline_y = (1-t)*self.y_smoothed[closest_point_idx] + t*self.y_smoothed[closest_neighbor_idx]
         centerline_yaw = (1-t)*self.heading_smoothed[closest_point_idx] + t*self.heading_smoothed[closest_neighbor_idx]
+        track_width = (1-t)*self.track_width_smoothed[closest_point_idx] + t*self.track_width_smoothed[closest_neighbor_idx]
         
         signed_dist_to_centerline = np.cos(centerline_yaw) * (y - centerline_y) - np.sin(centerline_yaw) * (x - centerline_x)    
         dist_to_centerline = np.abs(signed_dist_to_centerline)
-        heading_error = yaw - centerline_yaw
+        heading_error = centerline_yaw - yaw
         heading_error = np.arctan2(np.sin(heading_error), np.cos(heading_error))
 
-        #batch_idx = torch.arange(x.shape[0], device=x.device)
         p1_idx = np.where(closest_neighbor_idx > closest_point_idx, closest_point_idx, closest_neighbor_idx)
         p2_idx = np.where(closest_neighbor_idx > closest_point_idx, closest_neighbor_idx, closest_point_idx)
 
-        track_segment_vec = np.stack([
-            self.x_smoothed[p2_idx] - self.x_smoothed[p1_idx],
-            self.y_smoothed[p2_idx] - self.y_smoothed[p1_idx],
-        ], axis=-1)
-
-        #track_width = torch.lerp(self.track_width[p1_idx], self.track_width[p2_idx], t)
-        track_width = np.interp(t, [0, 1], [self.track_width_smoothed[p1_idx],
-                                            self.track_width_smoothed[p2_idx]])
-
-        # Get distances to centerline and edge
-        signed_dist_to_edge = track_width / 2 - dist_to_centerline
-
-        # Calculate Unit Normal Vector of the track segment
-        segment_len = np.linalg.norm(track_segment_vec, axis=-1, keepdims=True)
-        normal_vec_x =  track_segment_vec[..., 1] / segment_len
-        normal_vec_y = -track_segment_vec[..., 0] / segment_len
-        
-        # Vehicle orientation vectors
-        c_yaw = np.cos(yaw)
-        s_yaw = np.sin(yaw)
-        
-        # Project Car Basis vectors onto Track Normal
-        proj_forward = c_yaw * normal_vec_x + s_yaw * normal_vec_y
-        proj_left = -s_yaw * normal_vec_x + c_yaw * normal_vec_y
-
-        # Calculate signed distance of all 4 corners relative to the centerline
-        # d_corner = d_center + (longitudinal_offset * proj_fwd) + (lateral_offset * proj_left)
-        
         hw = car_width / 2.0
-        d_fl = signed_dist_to_centerline + (lf * proj_forward) + (hw * proj_left)
-        d_fr = signed_dist_to_centerline + (lf * proj_forward) - (hw * proj_left)
-        d_rl = signed_dist_to_centerline - (lr * proj_forward) + (hw * proj_left)
-        d_rr = signed_dist_to_centerline - (lr * proj_forward) - (hw * proj_left)
+        lat_w = hw * np.cos(heading_error)
+        
+        s_mu = np.sin(heading_error)
+        lat_f = lf * s_mu
+        lat_r = lr * s_mu
+
+        n = signed_dist_to_centerline
+
+        d_fl = n + lat_f - lat_w
+        d_rl = n - lat_r - lat_w
+        d_fr = n + lat_f + lat_w
+        d_rr = n - lat_r + lat_w
 
         # Find the corner that is furthest from the center (largest absolute distance)
-        all_corner_dists_from_center = np.stack([np.abs(d_fl), np.abs(d_fr), np.abs(d_rl), np.abs(d_rr)], axis=1)
+        all_corner_dists_from_center = np.stack([np.abs(d_fl), np.abs(d_fr), np.abs(d_rl), np.abs(d_rr)], axis=-1)
         max_dist_from_center = np.max(all_corner_dists_from_center, axis=-1)
 
         # The minimum distance to the edge is the Half-Width minus the furthest corner's distance
         min_dist_to_edge = (track_width / 2) - max_dist_from_center
+        signed_dist_to_edge = (track_width / 2) - dist_to_centerline
 
         return progress, signed_dist_to_centerline, heading_error, closest_point_idx, p1_idx, p2_idx, t, signed_dist_to_edge, min_dist_to_edge

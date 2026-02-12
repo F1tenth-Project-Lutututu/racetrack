@@ -93,7 +93,7 @@ class Racetrack:
 
     def interpolate_track(self, points_per_meter=10):
         N = int(self.track_length_smoothed * points_per_meter)
-        s_interpolated = np.linspace(0, N / points_per_meter, N)
+        s_interpolated = np.linspace(0, self.track_length_smoothed, N)
         x_interpolated = np.interp(s_interpolated, self.s_smoothed, self.x_smoothed)
         y_interpolated = np.interp(s_interpolated, self.s_smoothed, self.y_smoothed)
         heading_interpolated = np.interp(s_interpolated, self.s_smoothed, self.heading_smoothed)

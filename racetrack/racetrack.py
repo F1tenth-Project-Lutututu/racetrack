@@ -283,7 +283,7 @@ class Racetrack:
         
         signed_dist_to_centerline = np.cos(centerline_yaw) * (y - centerline_y) - np.sin(centerline_yaw) * (x - centerline_x)    
         dist_to_centerline = np.abs(signed_dist_to_centerline)
-        heading_error = centerline_yaw - yaw
+        heading_error = yaw - centerline_yaw
         heading_error = np.arctan2(np.sin(heading_error), np.cos(heading_error))
 
         p1_idx = np.where(closest_neighbor_idx > closest_point_idx, closest_point_idx, closest_neighbor_idx)
@@ -298,10 +298,10 @@ class Racetrack:
 
         n = signed_dist_to_centerline
 
-        d_fl = n + lat_f - lat_w
-        d_rl = n - lat_r - lat_w
-        d_fr = n + lat_f + lat_w
-        d_rr = n - lat_r + lat_w
+        d_fl = n + lat_f + lat_w
+        d_rl = n - lat_r + lat_w
+        d_fr = n + lat_f - lat_w
+        d_rr = n - lat_r - lat_w
 
         # Find the corner that is furthest from the center (largest absolute distance)
         all_corner_dists_from_center = np.stack([np.abs(d_fl), np.abs(d_fr), np.abs(d_rl), np.abs(d_rr)], axis=-1)

@@ -244,16 +244,19 @@ class Racetrack:
         plt.grid()
         plt.tight_layout()
 
-    # TODO think about connecting x and y into points and making this math smoother
     def cart2frenet(self, heading, x, y):
-        closes_point_idx = find_closest_point_idx(x, y, self.x_smoothed, self.y_smoothed)
-        closest_neighbor_idx = find_closest_neighbor_idx(x, y, self.x_smoothed, self.y_smoothed, closes_point_idx)
+        closest_point_idx = find_closest_point_idx(x, y, self.x_smoothed, self.y_smoothed)
+        closest_neighbor_idx = find_closest_neighbor_idx(x, y, self.x_smoothed, self.y_smoothed, closest_point_idx)
 
-        t = find_projection(x, y, self.x_smoothed, self.y_smoothed, self.s_smoothed, closes_point_idx, closest_neighbor_idx)
-        s0 = (1-t)*self.s_smoothed[closes_point_idx] + t*self.s_smoothed[closest_neighbor_idx]
-        x0 = (1-t)*self.x_smoothed[closes_point_idx] + t*self.x_smoothed[closest_neighbor_idx]
-        y0 = (1-t)*self.y_smoothed[closes_point_idx] + t*self.y_smoothed[closest_neighbor_idx]
-        psi0 = (1-t)*self.heading_smoothed[closes_point_idx] + t*self.heading_smoothed[closest_neighbor_idx]
+        t = find_projection(x, y, self.x_smoothed, self.y_smoothed, self.s_smoothed, closest_point_idx, closest_neighbor_idx)
+        s0 = (1-t)*self.s_smoothed[closest_point_idx] + t*self.s_smoothed[closest_neighbor_idx]
+        x0 = (1-t)*self.x_smoothed[closest_point_idx] + t*self.x_smoothed[closest_neighbor_idx]
+        y0 = (1-t)*self.y_smoothed[closest_point_idx] + t*self.y_smoothed[closest_neighbor_idx]
+        heading_1 = self.heading_smoothed[closest_point_idx]
+        heading_2 = self.heading_smoothed[closest_neighbor_idx]
+        if heading_1 - heading_2 > np.pi:
+            heading_2 += 2 * np.pi
+        psi0 = (1-t)*heading_1 + t*heading_2
         
         s = s0
         n = np.cos(psi0) * (y - y0) - np.sin(psi0) * (x - x0)    

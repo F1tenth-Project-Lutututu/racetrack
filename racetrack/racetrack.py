@@ -93,12 +93,11 @@ class Racetrack:
 
     def interpolate_track(self, points_per_meter=10):
         N = int(self.track_length_smoothed * points_per_meter)
-        s_interpolated = np.linspace(0, self.track_length_smoothed, N)
-        x_interpolated, y_interpolated = scipy.interpolate.splev(s_interpolated / self.track_length_smoothed, self.tck)
-        x_dot_interpolated, y_dot_interpolated = scipy.interpolate.splev(s_interpolated / self.track_length_smoothed, self.tck, der=1)
-        x_ddot_interpolated, y_ddot_interpolated = scipy.interpolate.splev(s_interpolated / self.track_length_smoothed, self.tck, der=2)
-        heading_interpolated = compute_heading(x_dot_interpolated, y_dot_interpolated)
-        curvature_interpolated = compute_curvature(x_dot_interpolated, y_dot_interpolated, x_ddot_interpolated, y_ddot_interpolated)
+        s_interpolated = np.linspace(0, N / points_per_meter, N)
+        x_interpolated = np.interp(s_interpolated, self.s_smoothed, self.x_smoothed)
+        y_interpolated = np.interp(s_interpolated, self.s_smoothed, self.y_smoothed)
+        heading_interpolated = np.interp(s_interpolated, self.s_smoothed, self.heading_smoothed)
+        curvature_interpolated = np.interp(s_interpolated, self.s_smoothed, self.curvature_smoothed)
         track_width_interpolated = np.interp(s_interpolated, self.s_smoothed, self.track_width_smoothed)
         track_width_corrected_interpolated = np.interp(s_interpolated, self.s_smoothed, self.track_width_corrected_smoothed)
         track_length_interpolated = s_interpolated[-1]
@@ -278,9 +277,13 @@ class Racetrack:
         progress = (1-t)*self.s_smoothed[closest_point_idx] + t*self.s_smoothed[closest_neighbor_idx]
         centerline_x = (1-t)*self.x_smoothed[closest_point_idx] + t*self.x_smoothed[closest_neighbor_idx]
         centerline_y = (1-t)*self.y_smoothed[closest_point_idx] + t*self.y_smoothed[closest_neighbor_idx]
-        centerline_yaw = (1-t)*self.heading_smoothed[closest_point_idx] + t*self.heading_smoothed[closest_neighbor_idx]
+        heading_1 = self.heading_smoothed[closest_point_idx]
+        heading_2 = self.heading_smoothed[closest_neighbor_idx]
+        if heading_1 - heading_2 > np.pi:
+            heading_2 += 2 * np.pi
+        centerline_yaw = (1-t)*heading_1 + t*heading_2
         track_width = (1-t)*self.track_width_smoothed[closest_point_idx] + t*self.track_width_smoothed[closest_neighbor_idx]
-        
+
         signed_dist_to_centerline = np.cos(centerline_yaw) * (y - centerline_y) - np.sin(centerline_yaw) * (x - centerline_x)    
         dist_to_centerline = np.abs(signed_dist_to_centerline)
         heading_error = yaw - centerline_yaw

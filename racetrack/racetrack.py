@@ -254,8 +254,8 @@ class Racetrack:
         y0 = (1-t)*self.y_smoothed[closest_point_idx] + t*self.y_smoothed[closest_neighbor_idx]
         heading_1 = self.heading_smoothed[closest_point_idx]
         heading_2 = self.heading_smoothed[closest_neighbor_idx]
-        if heading_1 - heading_2 > np.pi:
-            heading_2 += 2 * np.pi
+        if np.abs(heading_2 - heading_1) > np.pi:
+            heading_2 -= 2 * np.pi * np.sign(heading_2)
         psi0 = (1-t)*heading_1 + t*heading_2
         
         s = s0
@@ -282,8 +282,9 @@ class Racetrack:
         centerline_y = (1-t)*self.y_smoothed[closest_point_idx] + t*self.y_smoothed[closest_neighbor_idx]
         heading_1 = self.heading_smoothed[closest_point_idx]
         heading_2 = self.heading_smoothed[closest_neighbor_idx]
-        if heading_1 - heading_2 > np.pi:
-            heading_2 += 2 * np.pi
+        if np.abs(heading_2 - heading_1) > np.pi:
+            heading_2 -= 2 * np.pi * np.sign(heading_2)
+            
         centerline_yaw = (1-t)*heading_1 + t*heading_2
         track_width = (1-t)*self.track_width_smoothed[closest_point_idx] + t*self.track_width_smoothed[closest_neighbor_idx]
 

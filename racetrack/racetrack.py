@@ -23,7 +23,9 @@ class Racetrack:
                  smoothing_factor: float = 0.3,
                  smoothing_spline_degree: int = 5,
                  smoothing_filter_window: int = 10,
-                 smoothing_filter_order: int = 3):
+                 smoothing_filter_order: int = 3,
+                 interpolated_points_per_meter: int = 10
+                 ):
         assert track_name in LIST_OF_TRACKS, f"Track {track_name} not found. Available tracks: {LIST_OF_TRACKS}"
         # load track
         self.track_name = track_name
@@ -59,11 +61,12 @@ class Racetrack:
             self.tck, self.u
         ) = self.compute_track_parameters(self.raw_x, self.raw_y, self.raw_track_width)
 
+        self.heading_smoothed = np.unwrap(self.heading_smoothed)
 
         (
             self.s, self.x, self.y, self.track_width, self.track_width_corrected, self.track_length,
             self.curvature, self.heading,
-        ) = self.interpolate_track()
+        ) = self.interpolate_track(points_per_meter=interpolated_points_per_meter)
         self.track_size = len(self.x)
 
     def compute_track_parameters(self, raw_x, raw_y, raw_track_width):

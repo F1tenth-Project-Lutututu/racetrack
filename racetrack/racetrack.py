@@ -68,6 +68,13 @@ class Racetrack:
             self.curvature, self.heading,
         ) = self.interpolate_track(points_per_meter=interpolated_points_per_meter)
         self.track_size = len(self.x)
+        
+        # For track with overlap
+        self.last_idxmindist = None
+        if self.track_name == "long_track":
+            self.find_closest_point_idx_fn = self.find_closest_point_idx_near_last
+        else:
+            self.find_closest_point_idx_fn = find_closest_point_idx
 
     def compute_track_parameters(self, raw_x, raw_y, raw_track_width):
         track_width = scipy.signal.savgol_filter(raw_track_width,
@@ -246,9 +253,34 @@ class Racetrack:
         plt.legend()
         plt.grid()
         plt.tight_layout()
+        
+    def find_closest_point_idx_near_last(self, x, y, x_ref, y_ref):
+        distances = np.hypot(x - x_ref, y - y_ref)
+        
+        if self.last_idxmindist is not None:
+            n_points = len(x_ref)
+            window_size = 20  # Search window size
+            mask = np.ones(n_points, dtype=bool)
+            indices = np.arange(self.last_idxmindist - window_size,
+                                self.last_idxmindist + window_size + 1)
+            indices = indices % n_points
+            mask[indices] = False
+            distances[mask] = 1000.0
+            
+        idxmindist = np.argmin(distances)
+        
+        self.last_idxmindist = idxmindist
+        
+        # auto reset if the closest point is too far away
+        # if distances[idxmindist] > 1.0:
+        #     self.last_idxmindist = None
+        
+        return idxmindist
+        
 
     def cart2frenet(self, heading, x, y):
-        closest_point_idx = find_closest_point_idx(x, y, self.x_smoothed, self.y_smoothed)
+
+        closest_point_idx = self.find_closest_point_idx_fn(x, y, self.x_smoothed, self.y_smoothed)
         closest_neighbor_idx = find_closest_neighbor_idx(x, y, self.x_smoothed, self.y_smoothed, closest_point_idx)
 
         t = find_projection(x, y, self.x_smoothed, self.y_smoothed, self.s_smoothed, closest_point_idx, closest_neighbor_idx)

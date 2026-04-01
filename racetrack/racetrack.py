@@ -2,9 +2,9 @@ import os
 import scipy
 import numpy as np
 import matplotlib.pyplot as plt
-
 from racetrack.utils import compute_curvature, compute_heading, find_closest_neighbor_idx, find_closest_point_idx, find_projection
 import torch
+
 
 TRACKS_DIR = os.path.join(os.path.dirname(__file__), "tracks")
 LIST_OF_TRACKS = [track_file.split(".")[0] for track_file in os.listdir(TRACKS_DIR)]
@@ -58,7 +58,7 @@ class Racetrack:
             self.s_smoothed, self.x_smoothed, self.y_smoothed, self.track_width_smoothed,
             self.track_width_corrected_smoothed, self.track_length_smoothed,
             self.curvature_smoothed, self.heading_smoothed,
-            self.tck, self.u
+            self.tck, self.u, self.x_dot_smoothed, self.y_dot_smoothed
         ) = self.compute_track_parameters(self.raw_x, self.raw_y, self.raw_track_width)
 
         self.heading_smoothed = np.unwrap(self.heading_smoothed)
@@ -99,7 +99,7 @@ class Racetrack:
         smoothing_errors = np.sqrt((x - raw_x) ** 2 + (y - raw_y) ** 2)
         track_width_corrected = (track_width / 2 - smoothing_errors) * 2 # TODO what is the purpose of this?
         # TODO check if s and u are the same
-        return s, x, y, track_width, track_width_corrected, track_length, curvature, heading, tck, u
+        return s, x, y, track_width, track_width_corrected, track_length, curvature, heading, tck, u, x_dot, y_dot
 
     def interpolate_track(self, points_per_meter=10):
         N = int(self.track_length_smoothed * points_per_meter)
@@ -199,16 +199,22 @@ class Racetrack:
         plt.ylabel("y [m]")
         plt.tight_layout()
         plt.legend(["centerline spline", "track direction"])
-
-    def frenet2cart(self, s: np.ndarray, n: np.ndarray):
-        u = s / self.track_length_smoothed
-        x, y = scipy.interpolate.splev(u, self.tck)
-        x_dot, y_dot = scipy.interpolate.splev(u, self.tck, der=1)
+        
+    def frenet2cart(self, s: np.ndarray, n: np.ndarray, mu: np.ndarray = None):
+        x_dot = np.interp(s, self.s_smoothed, self.x_dot_smoothed)
+        y_dot = np.interp(s, self.s_smoothed, self.y_dot_smoothed)
+        x = np.interp(s, self.s_smoothed, self.x_smoothed)
+        y = np.interp(s, self.s_smoothed, self.y_smoothed)
         m = np.hypot(x_dot, y_dot)
         N = np.array([-y_dot, x_dot]) / m
         x_out = x + n * N[0]
         y_out = y + n * N[1]
-        return x_out, y_out
+        
+        if mu is None:
+            return x_out, y_out
+        
+        heading = np.interp(s, self.s_smoothed, self.heading_smoothed) + mu
+        return x_out, y_out, heading
 
     def plot_points(
         self, s: np.ndarray, n: np.ndarray, v_x=None, marker="o", alpha=1.0

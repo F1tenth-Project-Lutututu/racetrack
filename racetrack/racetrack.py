@@ -201,6 +201,7 @@ class Racetrack:
         plt.legend(["centerline spline", "track direction"])
         
     def frenet2cart(self, s: np.ndarray, n: np.ndarray, mu: np.ndarray = None):
+        s = np.mod(s, self.track_length_smoothed)   
         x_dot = np.interp(s, self.s_smoothed, self.x_dot_smoothed)
         y_dot = np.interp(s, self.s_smoothed, self.y_dot_smoothed)
         x = np.interp(s, self.s_smoothed, self.x_smoothed)

@@ -35,7 +35,3 @@ path = "racetrack/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["racetrack"]
-
-[tool.hatch.build.targets.wheel.force-include]
-# This ensures your 'tracks' folder is included in the installation
-"racetrack/tracks" = "racetrack/tracks"

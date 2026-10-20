@@ -83,6 +83,9 @@ class Racetrack:
                                           mode="wrap")
 
         smoothing_weights = 1. / track_width
+        # Preserve the original 1 m Monza centerline for this width-only variant.
+        if self.track_name == "lab_monza_iros2026_120cm":
+            smoothing_weights = np.ones_like(track_width)
         tck, u = scipy.interpolate.splprep(
             [raw_x, raw_y], smoothing_weights, s=self.smoothing_factor, k=self.smoothing_spline_degree, per=len(raw_x)
         )

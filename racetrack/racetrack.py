@@ -106,14 +106,16 @@ class Racetrack:
 
     def interpolate_track(self, points_per_meter=10):
         N = int(self.track_length_smoothed * points_per_meter)
-        s_interpolated = np.linspace(0, self.track_length_smoothed, N)
+        # A periodic track has unique samples in [0, L). Including both 0
+        # and L duplicates the seam vertex and creates a zero-length segment.
+        s_interpolated = np.linspace(0, self.track_length_smoothed, N, endpoint=False)
         x_interpolated = np.interp(s_interpolated, self.s_smoothed, self.x_smoothed)
         y_interpolated = np.interp(s_interpolated, self.s_smoothed, self.y_smoothed)
         heading_interpolated = np.interp(s_interpolated, self.s_smoothed, self.heading_smoothed)
         curvature_interpolated = np.interp(s_interpolated, self.s_smoothed, self.curvature_smoothed)
         track_width_interpolated = np.interp(s_interpolated, self.s_smoothed, self.track_width_smoothed)
         track_width_corrected_interpolated = np.interp(s_interpolated, self.s_smoothed, self.track_width_corrected_smoothed)
-        track_length_interpolated = s_interpolated[-1]
+        track_length_interpolated = self.track_length_smoothed
 
         return s_interpolated, x_interpolated, y_interpolated, track_width_interpolated, \
                track_width_corrected_interpolated, track_length_interpolated, \
